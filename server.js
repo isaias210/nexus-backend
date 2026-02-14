@@ -1,27 +1,21 @@
 const express = require('express');
-const app = express();
-const port = process.env.PORT || 10000;
 
-// Middleware
+const app = express();
+
 app.use(express.json());
 
-// ✅ ROTA BASE
+const PORT = process.env.PORT || 10000;
+
+// rota raiz
 app.get('/', (req, res) => {
-  res.status(200).send('Nexus Backend Online 🚀');
+  res.send('Nexus Backend Online 🚀');
 });
 
-// ✅ CALLBACK INSTAGRAM
-app.get('/auth/instagram/callback', (req, res) => {
-  const code = req.query.code;
-
-  if (!code) {
-    return res.status(400).send('Código não recebido do Instagram.');
-  }
-
-  res.status(200).send(`Instagram OAuth recebido com sucesso! Código: ${code}`);
+// health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Nexus Backend running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
