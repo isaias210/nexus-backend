@@ -1,52 +1,87 @@
-const express = require('express');
+const express = require("express");
+const { PrismaClient } = require("@prisma/client");
+
 const app = express();
+const prisma = new PrismaClient();
 
-// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Porta do Render (OBRIGATÓRIO usar process.env.PORT)
-const PORT = process.env.PORT || 10000;
-
-// ===============================
-// ROUTES
-// ===============================
-
-// Rota raiz
-app.get('/', (req, res) => {
-  res.status(200).send('🚀 Nexus Backend Online');
-});
-
-// Health Check (ESSENCIAL para Render e APIs)
-app.get('/health', (req, res) => {
+/**
+ * Root Route
+ */
+app.get("/", (req, res) => {
   res.status(200).json({
-    status: 'ok',
-    service: 'nexus-backend',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    status: "Nexus Backend Running",
+    version: "1.0.0"
   });
 });
 
-// Test route
-app.get('/test', (req, res) => {
+/**
+ * Health Check Route
+ */
+app.get("/api/health", (req, res) => {
   res.status(200).json({
-    message: 'Backend funcionando corretamente ✅'
+    status: "ok",
+    uptime: process.uptime()
   });
 });
 
-// ===============================
-// ERROR HANDLER
-// ===============================
+/**
+ * Database Test Route
+ */
+app.get("/api/test-db", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      database: "connected"
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Database connection failed",
+      details: error.message
+    });
+  }
+});
+
+/**
+ * Vector Test Route (pgvector)
+ */
+app.get("/api/test-vector", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT '[1,2,3]'::vector`;
+    res.status(200).json({
+      vector: "pgvector working"
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "pgvector not working",
+      details: error.message
+    });
+  }
+});
+
+/**
+ * 404 Handler
+ */
 app.use((req, res) => {
   res.status(404).json({
-    error: 'Route not found',
+    error: "Route not found",
     path: req.originalUrl
   });
 });
 
-// ===============================
-// START SERVER
-// ===============================
+/**
+ * Global Error Middleware
+ */
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({
+    error: "Internal server error"
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Nexus Backend running on port ${PORT}`);
 });
