@@ -4,9 +4,12 @@
   "description": "Nexus Publishing Backend",
   "main": "server.js",
   "type": "commonjs",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
-    "start": "node server.js",
-    "build": "prisma generate"
+    "build": "prisma generate",
+    "start": "node server.js"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
