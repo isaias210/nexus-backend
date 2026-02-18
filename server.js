@@ -11,7 +11,9 @@ const prisma = new PrismaClient();
 app.use(express.json());
 
 /*
+========================================
 ROOT
+========================================
 */
 app.get("/", (req, res) => {
   res.json({
@@ -21,7 +23,9 @@ app.get("/", (req, res) => {
 });
 
 /*
-REGISTER USER
+========================================
+REGISTER
+========================================
 */
 app.post("/api/register", async (req, res) => {
   try {
@@ -68,11 +72,17 @@ app.post("/api/register", async (req, res) => {
 });
 
 /*
+========================================
 LOGIN
+========================================
 */
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password required" });
+    }
 
     const user = await prisma.user.findUnique({
       where: { email }
@@ -94,7 +104,10 @@ app.post("/api/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token });
+    res.json({
+      message: "Login successful",
+      token
+    });
 
   } catch (error) {
     res.status(500).json({
@@ -105,19 +118,81 @@ app.post("/api/login", async (req, res) => {
 });
 
 /*
+========================================
+JWT MIDDLEWARE
+========================================
+*/
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token not provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Invalid token format" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid or expired token" });
+    }
+
+    req.user = decoded;
+    next();
+  });
+}
+
+/*
+========================================
+PROTECTED ROUTE
+========================================
+*/
+app.get("/api/me", authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      id: user.id,
+      email: user.email
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/*
+========================================
 HEALTH
+========================================
 */
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK" });
 });
 
 /*
+========================================
 404
+========================================
 */
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
 
+/*
+========================================
+START SERVER
+========================================
+*/
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
