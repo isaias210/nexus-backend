@@ -3,17 +3,14 @@ require("dotenv").config();
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 
-const express = require("express");
-const { PrismaClient } = require("@prisma/client");
-
 const app = express();
 const prisma = new PrismaClient();
 
 app.use(express.json());
 
-/**
- * Root Route
- */
+/*
+ Root Route
+*/
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "Nexus Backend Running",
@@ -21,24 +18,24 @@ app.get("/", (req, res) => {
   });
 });
 
-/**
- * Health Check Route
- */
+/*
+ Health Check
+*/
 app.get("/api/health", (req, res) => {
   res.status(200).json({
-    status: "ok",
+    status: "OK",
     uptime: process.uptime()
   });
 });
 
-/**
- * Database Test Route
- */
+/*
+ Database Test
+*/
 app.get("/api/test-db", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({
-      database: "connected"
+      database: "Connected"
     });
   } catch (error) {
     res.status(500).json({
@@ -48,40 +45,12 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
-/**
- * Vector Test Route (pgvector)
- */
-app.get("/api/test-vector", async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT '[1,2,3]'::vector`;
-    res.status(200).json({
-      vector: "pgvector working"
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: "pgvector not working",
-      details: error.message
-    });
-  }
-});
-
-/**
- * 404 Handler
- */
+/*
+ 404
+*/
 app.use((req, res) => {
   res.status(404).json({
-    error: "Route not found",
-    path: req.originalUrl
-  });
-});
-
-/**
- * Global Error Middleware
- */
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({
-    error: "Internal server error"
+    error: "Route not found"
   });
 });
 
@@ -90,3 +59,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Nexus Backend running on port ${PORT}`);
 });
+
