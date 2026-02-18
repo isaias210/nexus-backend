@@ -211,6 +211,86 @@ app.get("/api/projects", authenticateToken, async (req, res) => {
   }
 });
 
+app.post("/api/tasks", authenticateToken, async (req, res) => {
+  try {
+    const { title, description, projectId } = req.body;
+
+    if (!title || !projectId) {
+      return res.status(400).json({ error: "Title and projectId required" });
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project || project.userId !== req.user.userId) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const task = await prisma.task.create({
+      data: {
+        title,
+        description,
+        projectId
+      }
+    });
+
+    res.status(201).json(task);
+
+  } catch (error) {
+    res.status(500).json({ error: "Error creating task" });
+  }
+});
+
+app.get("/api/tasks/:projectId", authenticateToken, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project || project.userId !== req.user.userId) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: { projectId }
+    });
+
+    res.json(tasks);
+
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching tasks" });
+  }
+});
+
+app.put("/api/tasks/:taskId", authenticateToken, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { status } = req.body;
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { project: true }
+    });
+
+    if (!task || task.project.userId !== req.user.userId) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: { status }
+    });
+
+    res.json(updatedTask);
+
+  } catch (error) {
+    res.status(500).json({ error: "Error updating task" });
+  }
+});
+
 /*
 ========================================
 HEALTH
