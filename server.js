@@ -18,7 +18,7 @@ ROOT
 app.get("/", (req, res) => {
   res.json({
     status: "Nexus Backend Running",
-    version: "1.0.0"
+    version: "2.0.0"
   });
 });
 
@@ -80,10 +80,6 @@ app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password required" });
-    }
-
     const user = await prisma.user.findUnique({
       where: { email }
     });
@@ -123,7 +119,7 @@ JWT MIDDLEWARE
 ========================================
 */
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
     return res.status(401).json({ error: "Token not provided" });
@@ -135,19 +131,19 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: "Invalid token format" });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ error: "Invalid or expired token" });
     }
 
-    req.user = decoded;
+    req.user = user;
     next();
   });
 }
 
 /*
 ========================================
-PROTECTED ROUTE
+GET CURRENT USER
 ========================================
 */
 app.get("/api/me", authenticateToken, async (req, res) => {
@@ -172,6 +168,51 @@ app.get("/api/me", authenticateToken, async (req, res) => {
 
 /*
 ========================================
+CREATE PROJECT
+========================================
+*/
+app.post("/api/projects", authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: "Project name required" });
+    }
+
+    const project = await prisma.project.create({
+      data: {
+        name,
+        userId: req.user.userId
+      }
+    });
+
+    res.status(201).json(project);
+
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create project" });
+  }
+});
+
+/*
+========================================
+LIST PROJECTS
+========================================
+*/
+app.get("/api/projects", authenticateToken, async (req, res) => {
+  try {
+    const projects = await prisma.project.findMany({
+      where: { userId: req.user.userId }
+    });
+
+    res.json(projects);
+
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch projects" });
+  }
+});
+
+/*
+========================================
 HEALTH
 ========================================
 */
@@ -188,11 +229,6 @@ app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
 
-/*
-========================================
-START SERVER
-========================================
-*/
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
