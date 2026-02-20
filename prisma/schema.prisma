@@ -16,19 +16,20 @@ model User {
 }
 
 model Project {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+  tasks     Task[]
+  createdAt DateTime  @default(now())
 }
 
 model Task {
-  id        String  @id @default(uuid())
-  title     String
+  id          String   @id @default(uuid())
+  title       String
   description String?
-  status    String  @default("todo")
+  status      String   @default("todo")
 
-  project   Project @relation(fields: [projectId], references: [id])
-  projectId String
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
 }
