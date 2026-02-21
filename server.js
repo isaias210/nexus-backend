@@ -4,6 +4,7 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { getState, updateState, addLog } = require('./system/memory-engine');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -288,6 +289,38 @@ app.put("/api/tasks/:taskId", authenticateToken, async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ error: "Error updating task" });
+  }
+});
+
+/*
+========================================
+rota GET /system/state
+========================================
+*/
+app.get('/system/state', (req, res) => {
+  try {
+    const state = getState();
+    res.json(state);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read state' });
+  }
+});
+
+/*
+========================================
+rota POST /system/update
+========================================
+*/
+app.post('/system/update', (req, res) => {
+  try {
+    const updated = updateState(req.body);
+    addLog({
+      action: "STATE_UPDATED",
+      data: req.body
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update state' });
   }
 });
 
